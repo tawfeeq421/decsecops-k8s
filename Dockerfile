@@ -1,5 +1,13 @@
-FROM openjdk:8-jdk-alpine
-EXPOSE 8080
+FROM eclipse-temurin:8-jdk-alpine
+
+WORKDIR /app
+
+# Copy jar file
 ARG JAR_FILE=target/*.jar
-ADD ${JAR_FILE} app.jar
-ENTRYPOINT ["java","-jar","/app.jar"]
+COPY ${JAR_FILE} app.jar
+
+# Expose port
+EXPOSE 8080
+
+# Run app
+ENTRYPOINT ["java","-jar","/app/app.jar"]
