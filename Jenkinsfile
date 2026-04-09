@@ -95,14 +95,14 @@ pipeline {
       slackSend(
         channel: '#devops',
         color: 'good',
-        message: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}\nReport generated."
+        message: "✅ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}\nReport generated."
       )
     }
     failure {
       slackSend(
         channel: '#devops',
         color: 'danger',
-        message: "FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}\nCheck trivy report.\n${env.BUILD_URL}"
+        message: "❌ FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}\nCheck trivy report.\n${env.BUILD_URL}"
       )
     }
   }
