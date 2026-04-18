@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress
+  namespace: devops
+  labels:
+    auther: Tawfeeq
+  annotation:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx,ingress.kubernetes.io/ssl-redirect: "true"
+
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: 
+       - devsecops.com
+      secretName: devops-tls
+
+  rules:
+    - hots: devsecops.com
+      paths:
+        path: /
+        pathType: Prefix
+        backend:
+          name: app-service
+          port:
+            number: 80
+
+
