@@ -7,6 +7,10 @@ pipeline {
   environment {
     DOCKER_IMAGE = "tawfeeq421/devsecops"
     DOCKER_TAG = "${BUILD_NUMBER}"
+    AWS_REGION = 'us-west-2'
+    CLUSTER_NAME = 'my-cluster'
+    NAMESPACE = 'devops'
+    IMAGE = "${DOCKER_IMAGE}:${DOCKER_TAG}"
   }
   stages{
     stage('Clean Workspace'){
@@ -73,16 +77,43 @@ pipeline {
     stage('Docker Build & Push'){
       steps{
         script{
-          withDockerRegistry([credentialsId: 'docker-cred']){
-            sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
-            sh "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}"
+          docker.withRegistry('https://index.docker.io/v1/', "docker-cred"){
+            def app = docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
+            app.push()
           }
         }
       }
     }
-    stage('Image Scan'){
+    stage('Trivy Image Scan'){
       steps{
-        sh "trivy image ${DOCKER_IMAGE}:${DOCKER_TAG}"
+        sh """
+        trivy image \
+        --severity HIGH,CRITICAL \
+        --format table \
+        -o trivy_image-report.txt \
+        ${DOCKER_IMAGE}:${DOCKER_TAG} || true
+        """
+      }
+    }
+    stage('Deploy to EKS'){
+      steps{
+        withCredentials([[
+          $class 'AmazonWebServicesCredentialsBinding',
+          credentialsId: 'aws-creds'
+        ]]){
+          sh '''
+          set -e 
+          aws eks --region $AWS_REGION update-kubeconfig --name $CLUSTER_NAME
+          kubectl apply -f k8s/namespace.yml
+
+          kubectl apply -f k8s/app-deployment.yml
+          kubectl apply -f k8s/app-service.yml
+          kubectl apply -f k8s/ingress.yml
+
+          kubectl set image deployment/app-deployment myapp=$IMMAGE -n $NAMESPACE
+          kubectl rollout status deployment/app-depolyment -n $NAMESPACE
+          '''
+        }
       }
     }
   }
